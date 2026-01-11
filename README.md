@@ -183,4 +183,5 @@ Reproducibility notes
 All steps are deterministic given fixed random seeds (where used).
 
 Raw inputs must match the accessions listed in data/ACCESSIONS.txt.
+Raw genomes are downloaded from NCBI using the accessions in data/ACCESSIONS.txt
 
