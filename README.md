@@ -174,9 +174,17 @@ Key outputs:
 -results/tree_mosaic_agreement/agreement_metrics.csv
 -results/tree_mosaic_agreement/contingency_orf_vs_mosaic.csv
 
-Optional: publication-ready figures/tables
+---
 
-Scripts in scripts/ are optional convenience utilities. They do not affect core results.
+## Paper-ready figures and Supplementary Data (Figure 1–6, Table 1, S1.xlsx)
+
+After you have generated all core results (gb pipeline → mosaic/orf → ORF3 phylogeny → concordance → chimera ranking),
+you can build final paper-ready figures (PDF vector + PNG 300 dpi), Table 1 (Excel), and Supplementary Data S1 (single multi-sheet Excel).
+
+Example (Windows; adjust paths as needed):
+
+```bat
+python paper\cssv_make_paper_package.py --gb_dir "gb_results" --mosaic_orf_dir "gb_results\mosaic_orf" --orf3_dir "gb_results\mosaic_orf\longest_orfs" --orf3_phylogeny_dir "gb_results\mosaic_orf\longest_orfs\phylogeny" --compare_dir "gb_results\distance_compare" --agreement_dir "gb_results\tree_mosaic_agreement" --switchpoint_post_dir "gb_results\switchpoint_post" --out_dir "paper_outputs" --top_n 10 --panel_case upper --dpi 300
 
 Reproducibility notes
 
@@ -184,4 +192,6 @@ All steps are deterministic given fixed random seeds (where used).
 
 Raw inputs must match the accessions listed in data/ACCESSIONS.txt.
 Raw genomes are downloaded from NCBI using the accessions in data/ACCESSIONS.txt
+
+
 
