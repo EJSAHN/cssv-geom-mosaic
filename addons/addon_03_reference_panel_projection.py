@@ -37,7 +37,7 @@ Notes
 Typical use
 -----------
 python addons/addon_03_reference_panel_projection.py ^
-  --query_fasta data/combined_core48.fasta ^
+  --query_fasta data/combined_genomes.fasta ^
   --ref_fasta data/pmp_panel87.fasta ^
   --k 4
 
@@ -476,4 +476,5 @@ def main():
 
 
 if __name__ == "__main__":
+
     main()
