@@ -16,7 +16,7 @@ This script computes:
 
 Inputs
 ------
-  --query_fasta   FASTA containing query genomes (e.g., your 48-core dataset)
+  --query_fasta   FASTA containing query genomes (e.g., 48-core dataset)
   --ref_fasta     FASTA containing reference panel genomes (e.g., PMPP 86/87)
   --k             k-mer size (default 4)
 
@@ -478,3 +478,4 @@ def main():
 if __name__ == "__main__":
 
     main()
+
