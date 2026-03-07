@@ -20,7 +20,7 @@ Raw genome sequences are **NOT** included in this repository.
 
 Please download the 48 CSSV genomes from NCBI using the accession list in:
 
-- `data/ACCESSIONS.txt`
+- `ACCESSIONS.txt`
 
 You may download sequences as `.gb/.gbk` (preferred) or `.fasta`.  
 Place downloaded files into a single input folder, e.g.:
