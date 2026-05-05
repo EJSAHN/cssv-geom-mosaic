@@ -1,6 +1,6 @@
 # cssv-geom-mosaic
 
-Alignment-free genome geometry and mosaic (chimera) detection for cacao swollen shoot virus (CSSV), cross-validated against ORF3 phylogeny.
+Alignment-free genome geometry and mosaic/recombinant-like candidate prioritization for cacao swollen shoot virus (CSSV), cross-validated against ORF3 phylogeny.
 
 This repository provides a reproducible, command-line pipeline to:
 1) compute alignment-free genome distances (k-mer cosine),
@@ -8,9 +8,14 @@ This repository provides a reproducible, command-line pipeline to:
 3) predict ORFs from sequence only (no GenBank CDS required),
 4) derive ORF3 (longest ORF proxy) protein phylogeny distances and NJ tree,
 5) quantify concordance between genome-scale distances and ORF3 distances,
-6) rank chimera candidates and generate publication-ready summary tables/figures,
+6) rank mosaic/recombinant-like candidates for follow-up using a mosaic-discordance score,
 7) **(Add-on A)** attach nearest-neighbor “context/provenance” labels (within-dataset; post-hoc),
 8) **(Add-on B)** project a query set onto an expanded reference panel (e.g., PMPP panel; post-hoc).
+
+Directory guide:
+- `pipeline/` contains the core end-to-end analysis modules used to generate the main results.
+- `scripts/` contains auxiliary plotting/table helpers retained for reproducing earlier manuscript outputs.
+- `analysis_checks/` contains CSV-only score-audit and sensitivity utilities for Supplementary Data S1.
 
 ---
 
@@ -50,8 +55,6 @@ pip install -r requirements.txt
 ---
 
 ## Quickstart (end-to-end)
-
-The repository is organized so that `pipeline/` contains the core analytical steps that generate the main derived datasets, whereas `scripts/` contains downstream utilities for post-processing, plotting, and table generation from pipeline outputs.
 
 Assume:
 - raw genomes in: `data/raw/`
@@ -142,7 +145,7 @@ Outputs:
 
 ---
 
-## Concordance tests and chimera ranking
+## Concordance tests and mosaic-discordance ranking
 
 ### 5) Distance–distance concordance (Mantel-style permutation)
 
@@ -150,14 +153,14 @@ Outputs:
 python pipeline/cssv_compare_distances.py   --matrix_a "results/gb/k4_cosine_distance.csv"   --matrix_b "results/orf3_phylogeny/pairwise_identity_distance.csv"   --b_split "|"   --out_dir "results/compare_distances"   --method spearman   --perm 5000   --seed 0   --plot
 ```
 
-### 6) ORF–mosaic agreement + chimera candidates
+### 6) ORF–mosaic agreement + mosaic/recombinant-like candidates
 
 ```bash
 python pipeline/cssv_tree_mosaic_agreement.py   --orf_dist "results/orf3_phylogeny/pairwise_identity_distance.csv"   --orf_name_split "|"   --window_assignments "results/gb/window_assignments.csv"   --out_dir "results/tree_mosaic_agreement"   --k_orf 8   --min_purity 0.6   --top_n 20   --tree_newick "results/orf3_phylogeny/nj_tree.newick"
 ```
 
 Key outputs:
-- `results/tree_mosaic_agreement/chimera_candidates.csv`
+- `results/tree_mosaic_agreement/mosaic_ranked_candidates.csv`
 - `results/tree_mosaic_agreement/mosaic_orf_merged_per_genome.csv`
 - `results/tree_mosaic_agreement/agreement_metrics.csv`
 - `results/tree_mosaic_agreement/contingency_orf_vs_mosaic.csv`
@@ -232,11 +235,68 @@ These tables are intended for Supplementary reporting (e.g., Supplementary Data 
 python addons/addon_03_reference_panel_projection.py   --query_fasta combined_genomes.fasta   --ref_fasta cibv.fa   --k 4
 ```
 
+
 ---
 
-## Paper-ready figures and Supplementary Data (Figure 1–6, Table 1, S1.xlsx)
+## Analysis-check utilities (CSV only)
 
-After you have generated all core results (gb pipeline → mosaic/orf → ORF3 phylogeny → concordance → chimera ranking),
+The `analysis_checks/` directory contains three tabular audit/sensitivity utilities used to document the mosaic-discordance score and parameter choices. These scripts do not generate figures. Their outputs are suitable for Supplementary Data S1.
+
+### A) Mosaic-discordance score audit
+
+Audits the composite score formula, the full score distribution, and simple component-weight perturbations. The input table is the merged output from the ORF–mosaic agreement step.
+
+```bash
+python analysis_checks/cssv_mosaic_discordance_score_audit.py \
+  --merged "results/tree_mosaic_agreement/mosaic_orf_merged_per_genome.csv" \
+  --out_dir "results/mosaic_discordance_score_audit" \
+  --top_n 10
+```
+
+Key outputs:
+- `mosaic_discordance_score_formula_components.csv`
+- `mosaic_discordance_score_distribution_summary.csv`
+- `mosaic_discordance_score_weight_sensitivity.csv`
+- `mosaic_discordance_score_topN_by_weight_scheme.csv`
+
+### B) Parameter sensitivity
+
+Runs one-at-a-time sensitivity tests around the baseline mosaic-barcode configuration and separately varies ORF-cluster K while holding the baseline mosaic barcode fixed.
+
+```bash
+python analysis_checks/cssv_parameter_sensitivity.py \
+  --repo "." \
+  --input_dir "data/raw" \
+  --orf_dist "results/orf3_phylogeny/pairwise_identity_distance.csv" \
+  --out_dir "results/parameter_sensitivity"
+```
+
+Key outputs:
+- `sensitivity_summary.csv`
+- `sensitivity_topN_by_config.csv`
+- `sensitivity_topN_overlap_matrix.csv`
+
+### C) ORF-threshold sensitivity
+
+Repeats ORF prediction and ORF-boundary enrichment analyses across multiple minimum ORF-length thresholds.
+
+```bash
+python analysis_checks/cssv_orf_threshold_sensitivity.py \
+  --repo "." \
+  --input_dir "data/raw" \
+  --window_assignments "results/gb/window_assignments.csv" \
+  --out_dir "results/orf_threshold_sensitivity" \
+  --thresholds "200,300,400"
+```
+
+Key output:
+- `orf_threshold_sensitivity_summary.csv`
+
+---
+
+## Paper-ready figures and Supplementary Data (Figure 1–7, Table 1, S1.xlsx)
+
+After you have generated all core results (gb pipeline → mosaic/orf → ORF3 phylogeny → concordance → mosaic-discordance ranking),
 you can build final paper-ready figures (PDF vector + PNG 300 dpi), Table 1 (Excel), and Supplementary Data S1 (single multi-sheet Excel).
 
 Example (Windows; adjust paths as needed):
