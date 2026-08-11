@@ -1,6 +1,6 @@
 # cssv-geom-mosaic
 
-Alignment-free genome geometry and mosaic/recombinant-like candidate prioritization for cacao swollen shoot virus (CSSV), cross-validated against ORF3 phylogeny.
+Alignment-free genome geometry and sliding-window mosaic barcodes for characterizing modular diversity in the cacao swollen shoot virus (CSSV) complex, cross-validated against ORF3 phylogeny.
 
 This repository provides a reproducible, command-line pipeline to:
 1) compute alignment-free genome distances (k-mer cosine),
@@ -8,14 +8,18 @@ This repository provides a reproducible, command-line pipeline to:
 3) predict ORFs from sequence only (no GenBank CDS required),
 4) derive ORF3 (longest ORF proxy) protein phylogeny distances and NJ tree,
 5) quantify concordance between genome-scale distances and ORF3 distances,
-6) rank mosaic/recombinant-like candidates for follow-up using a mosaic-discordance score,
+6) quantify ORF–mosaic agreement and rank genomes by barcode-derived mosaic complexity,
 7) **(Add-on A)** attach nearest-neighbor “context/provenance” labels (within-dataset; post-hoc),
-8) **(Add-on B)** project a query set onto an expanded reference panel (e.g., PMPP panel; post-hoc).
+8) **(Add-on B)** project a query set onto an expanded reference panel (e.g., a broader published cacao-infecting badnavirus panel; post-hoc).
 
 Directory guide:
 - `pipeline/` contains the core end-to-end analysis modules used to generate the main results.
-- `scripts/` contains auxiliary plotting/table helpers retained for reproducing earlier manuscript outputs.
-- `analysis_checks/` contains CSV-only score-audit and sensitivity utilities for Supplementary Data S1.
+- `scripts/` contains optional plotting and table-generation helpers.
+- `analysis_checks/` contains CSV-only score-audit and parameter-sensitivity utilities.
+- `validation/` contains external-label, clustering, MDS, ORF-boundary, ORF3-bootstrap, and accession-record validation modules.
+- `tools/` contains accession-exact input-preparation utilities.
+- `resources/` contains the published species labels used for external validation.
+- `VERSION` and `CHANGELOG.md` identify the validated public release and summarize method-level changes.
 
 ---
 
@@ -75,7 +79,7 @@ Key outputs:
 ### 2) Mosaic switchpoints + ORF prediction + ORF-boundary null test
 
 ```bash
-python pipeline/cssv_mosaic_orf_analysis.py   --input_dir "data/raw"   --window_assignments "results/gb/window_assignments.csv"   --out_dir "results/mosaic_orf"   --circular   --start_codons ATG   --min_orf_aa 300   --switchpoint_mode start   --min_run 2   --near_bp 200   --perm 2000   --plot_top 10
+python pipeline/cssv_mosaic_orf_analysis.py   --input_dir "data/raw"   --window_assignments "results/gb/window_assignments.csv"   --out_dir "results/mosaic_orf"   --circular   --start_codons ATG   --min_orf_aa 300   --switchpoint_mode start   --min_run 2   --near_bp 200   --perm 2000   --plot_top 0   --no_plots
 ```
 
 Key outputs:
@@ -145,7 +149,7 @@ Outputs:
 
 ---
 
-## Concordance tests and mosaic-discordance ranking
+## Concordance tests, ORF–mosaic agreement, and mosaic-complexity ranking
 
 ### 5) Distance–distance concordance (Mantel-style permutation)
 
@@ -153,14 +157,14 @@ Outputs:
 python pipeline/cssv_compare_distances.py   --matrix_a "results/gb/k4_cosine_distance.csv"   --matrix_b "results/orf3_phylogeny/pairwise_identity_distance.csv"   --b_split "|"   --out_dir "results/compare_distances"   --method spearman   --perm 5000   --seed 0   --plot
 ```
 
-### 6) ORF–mosaic agreement + mosaic/recombinant-like candidates
+### 6) ORF–mosaic agreement + mosaic-complexity ranking
 
 ```bash
-python pipeline/cssv_tree_mosaic_agreement.py   --orf_dist "results/orf3_phylogeny/pairwise_identity_distance.csv"   --orf_name_split "|"   --window_assignments "results/gb/window_assignments.csv"   --out_dir "results/tree_mosaic_agreement"   --k_orf 8   --min_purity 0.6   --top_n 20   --tree_newick "results/orf3_phylogeny/nj_tree.newick"
+python pipeline/cssv_tree_mosaic_agreement.py   --orf_dist "results/orf3_phylogeny/pairwise_identity_distance.csv"   --orf_name_split "|"   --window_assignments "results/gb/window_assignments.csv"   --out_dir "results/tree_mosaic_agreement"   --k_orf 8   --mosaic_k 8   --min_purity 0.6   --top_n 20   --tree_newick "results/orf3_phylogeny/nj_tree.newick"
 ```
 
 Key outputs:
-- `results/tree_mosaic_agreement/mosaic_ranked_candidates.csv`
+- `results/tree_mosaic_agreement/mosaic_ranked_genomes.csv`
 - `results/tree_mosaic_agreement/mosaic_orf_merged_per_genome.csv`
 - `results/tree_mosaic_agreement/agreement_metrics.csv`
 - `results/tree_mosaic_agreement/contingency_orf_vs_mosaic.csv`
@@ -240,24 +244,25 @@ python addons/addon_03_reference_panel_projection.py   --query_fasta combined_ge
 
 ## Analysis-check utilities (CSV only)
 
-The `analysis_checks/` directory contains three tabular audit/sensitivity utilities used to document the mosaic-discordance score and parameter choices. These scripts do not generate figures. Their outputs are suitable for Supplementary Data S1.
+The `analysis_checks/` directory contains three tabular audit/sensitivity utilities used to document the mosaic-complexity score and parameter choices. These scripts do not generate figures. Their outputs are suitable for Supplementary Data S1.
 
-### A) Mosaic-discordance score audit
+### A) Mosaic-complexity score audit
 
-Audits the composite score formula, the full score distribution, and simple component-weight perturbations. The input table is the merged output from the ORF–mosaic agreement step.
+Audits the three-component barcode-complexity score, the full score distribution, and simple component-weight perturbations. The input table is the merged output from the ORF–mosaic agreement step.
 
 ```bash
-python analysis_checks/cssv_mosaic_discordance_score_audit.py \
+python analysis_checks/cssv_mosaic_complexity_score_audit.py \
   --merged "results/tree_mosaic_agreement/mosaic_orf_merged_per_genome.csv" \
-  --out_dir "results/mosaic_discordance_score_audit" \
-  --top_n 10
+  --out_dir "results/mosaic_complexity_score_audit" \
+  --top_n 10 \
+  --mosaic_k 8
 ```
 
 Key outputs:
-- `mosaic_discordance_score_formula_components.csv`
-- `mosaic_discordance_score_distribution_summary.csv`
-- `mosaic_discordance_score_weight_sensitivity.csv`
-- `mosaic_discordance_score_topN_by_weight_scheme.csv`
+- `mosaic_complexity_score_formula_components.csv`
+- `mosaic_complexity_score_distribution_summary.csv`
+- `mosaic_complexity_score_weight_sensitivity.csv`
+- `mosaic_complexity_score_topN_by_weight_scheme.csv`
 
 ### B) Parameter sensitivity
 
@@ -294,9 +299,58 @@ Key output:
 
 ---
 
+## Accession-exact input preparation
+
+The input-preparation utility searches accession-specific local files first, then an optional multi-FASTA panel, and downloads only missing records from NCBI. It writes one record per file so combined FASTA files cannot be loaded accidentally as duplicate inputs.
+
+```bash
+python tools/cssv_prepare_core_inputs.py \
+  --accessions ACCESSIONS.txt \
+  --source_dir "path/to/local/sequence/files" \
+  --panel_fasta "path/to/reference_panel.fasta" \
+  --out_fasta_dir "data/core48_fasta" \
+  --out_genbank_dir "data/core48_genbank" \
+  --email "your.email@example.org" \
+  --download_missing
+```
+
+The GenBank records are used for accession-level record screening and comparison of the predicted longest ORF with annotated ORF3/polyprotein features. This record-based screen does not experimentally establish episomal status.
+
+---
+
+## Full analysis and validation suite
+
+The validation driver runs the corrected circular barcode workflow and writes tabular outputs only. Circular origin-spanning barcode windows and the last-to-first barcode boundary are included. Barcode entropy is reported in bits and normalized by `log2(K)` in the composite mosaic-complexity score. ORF–mosaic mismatch is retained as a separate diagnostic and is not included in the score.
+
+```bash
+python validation/run_cssv_analysis_and_validation.py \
+  --repo "." \
+  --input_dir "data/core48_fasta" \
+  --genbank_dir "data/core48_genbank" \
+  --out_dir "results/full_analysis" \
+  --existing_alignment "path/to/alignment.trim_gap0.50.faa" \
+  --bootstrap_replicates 1000 \
+  --force
+```
+
+If `--existing_alignment` is omitted, `cssv_orf_msa_tree.py` attempts native MAFFT and then WSL MAFFT. The validation outputs include:
+
+- published-species agreement of whole-genome k-mer clusters;
+- MDS Stress-1 and distance-preservation diagnostics;
+- K-selection, seed-stability, and Euclidean-versus-spherical clustering checks;
+- ORF3 neighbor-joining bootstrap support with no biological outgroup;
+- ORF-boundary proximity sensitivity at 100, 200, and 400 bp;
+- accession-level record/EVE flags and annotated-ORF3 consistency checks;
+- score-audit, barcode-parameter, ORF-cluster-K, and ORF-length-threshold sensitivity tables.
+
+See `validation/README.md` for output details.
+
+
+---
+
 ## Paper-ready figures and Supplementary Data (Figure 1–7, Table 1, S1.xlsx)
 
-After you have generated all core results (gb pipeline → mosaic/orf → ORF3 phylogeny → concordance → mosaic-discordance ranking),
+After you have generated all core results (gb pipeline → mosaic/orf → ORF3 phylogeny → concordance → mosaic-complexity ranking),
 you can build final paper-ready figures (PDF vector + PNG 300 dpi), Table 1 (Excel), and Supplementary Data S1 (single multi-sheet Excel).
 
 Example (Windows; adjust paths as needed):
