@@ -7,10 +7,19 @@ data/
 results/
 gb_results/
 paper_outputs/
+*.fa
 *.fasta
 *.fna
+*.faa
 *.gb
 *.gbk
+*.genbank
+
+# Common generated projection tables
+projection_nearest_reference.tsv
+projection_token_summary.tsv
+nearest_neighbor_provenance.tsv
+nearest_neighbor_token_summary.tsv
 
 # OS/editor files
 .DS_Store
